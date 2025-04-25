@@ -1,0 +1,20 @@
+{
+    "SOC":{    
+        "port": "COM8",
+        "baudrate": 961200,
+        "bytesize": 8,
+        "parity": "N",
+        "stopbits": 1,
+        "timeout": 1,
+        "file_path": "logs/soc.log"
+    },
+    "MCU":{
+        "port": "COM9",
+        "baudrate": 961200,
+        "bytesize": 8,
+        "parity": "N",
+        "stopbits": 1,
+        "timeout": 1,
+        "file_path": "logs/mcu.log"
+    }
+}

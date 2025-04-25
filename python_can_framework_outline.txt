@@ -1,0 +1,321 @@
+# Python CAN通信测试框架大纲
+
+## 功能概述
+
+1. **CAN通信**
+   - 通过Vector硬件发送/接收CAN报文
+   - 支持多通道CAN通信
+   - 报文定时发送功能
+
+2. **配置管理**
+   - JSON格式配置文件解析
+   - CAN报文配置
+   - 测试用例配置
+
+3. **日志系统**
+   - 程序运行日志
+   - 串口通信日志
+   - CAN报文收发日志
+
+4. **串口通信**
+   - 串口数据收发
+   - 串口数据解析
+
+## 目录结构
+
+```
+durability_test/
+│
+├── config/                            # 配置文件目录
+│   ├── can/                           # CAN相关配置
+│   │   ├── messages/                  # CAN报文配置
+│   │   │   ├── engine.json            # 引擎相关报文
+│   │   │   ├── chassis.json           # 底盘相关报文
+│   │   │   └── diagnostics.json       # 诊断相关报文
+│   │   │
+│   │   └── channels.json              # CAN通道配置
+│   │
+│   ├── serial/                        # 串口配置
+│   │   ├── port_config.json           # 串口端口配置
+│   │   └── protocol.json              # 串口协议配置
+│   │
+│   └── test/                          # 测试配置
+│       ├── durability.json            # 耐久测试配置
+│       ├── performance.json           # 性能测试配置
+│       └── templates/                 # 测试模板配置
+│           ├── standard_test.json     # 标准测试模板
+│           └── custom_test.json       # 自定义测试模板
+│
+├── src/                               # 源代码目录
+│   │
+│   ├── can/                           # CAN通信模块
+│   │   ├── __init__.py                # 模块初始化文件
+│   │   ├── can_manager.py             # CAN管理器
+│   │   ├── vector_interface.py        # Vector硬件接口
+│   │   ├── message_handler.py         # 报文处理器
+│   │   ├── signal_decoder.py          # 信号解码器
+│   │   └── message_scheduler.py       # 报文调度器
+│   │
+│   ├── serial/                        # 串口通信模块
+│   │   ├── __init__.py                # 模块初始化文件
+│   │   ├── serial_manager.py          # 串口管理器
+│   │   ├── protocol_parser.py         # 协议解析器
+│   │   ├── data_formatter.py          # 数据格式化
+│   │   └── command_handler.py         # 命令处理器
+│   │
+│   ├── config/                        # 配置管理模块
+│   │   ├── __init__.py                # 模块初始化文件
+│   │   ├── config_parser.py           # 配置文件解析器
+│   │   ├── config_validator.py        # 配置验证器
+│   │   └── config_manager.py          # 配置管理器
+│   │
+│   ├── logging/                       # 日志模块
+│   │   ├── __init__.py                # 模块初始化文件
+│   │   ├── log_manager.py             # 日志管理器
+│   │   ├── formatters/                # 日志格式化
+│   │   │   ├── __init__.py            # 模块初始化文件
+│   │   │   ├── can_formatter.py       # CAN日志格式化
+│   │   │   └── serial_formatter.py    # 串口日志格式化
+│   │   │
+│   │   ├── handlers/                  # 日志处理器
+│   │   │   ├── __init__.py            # 模块初始化文件
+│   │   │   ├── file_handler.py        # 文件处理器
+│   │   │   └── console_handler.py     # 控制台处理器
+│   │   │
+│   │   ├── can_logger.py              # CAN日志记录器
+│   │   └── serial_logger.py           # 串口日志记录器
+│   │
+│   ├── utils/                         # 工具模块
+│   │   ├── __init__.py                # 模块初始化文件
+│   │   ├── helpers.py                 # 辅助函数
+│   │   ├── data_conversion.py         # 数据转换工具
+│   │   ├── thread_safe_queue.py       # 线程安全队列
+│   │   └── timing.py                  # 时间处理工具
+│   │
+│   ├── test/                          # 测试执行模块
+│   │   ├── __init__.py                # 模块初始化文件
+│   │   ├── test_runner.py             # 测试运行器
+│   │   ├── test_case.py               # 测试用例基类
+│   │   ├── durability_test.py         # 耐久测试实现
+│   │   └── performance_test.py        # 性能测试实现
+│   │
+│   └── core/                          # 核心模块
+│       ├── __init__.py                # 模块初始化文件
+│       ├── application.py             # 应用程序类
+│       └── event_manager.py           # 事件管理器
+│
+├── logs/                              # 日志输出目录
+│   ├── app/                           # 应用日志
+│   │   ├── info/                      # 信息日志
+│   │   ├── error/                     # 错误日志
+│   │   └── debug/                     # 调试日志
+│   │
+│   ├── can/                           # CAN通信日志
+│   │   ├── tx/                        # 发送日志
+│   │   ├── rx/                        # 接收日志
+│   │   └── error/                     # 错误日志
+│   │
+│   └── serial/                        # 串口通信日志
+│       ├── tx/                        # 发送日志
+│       ├── rx/                        # 接收日志
+│       └── error/                     # 错误日志
+│
+├── scripts/                           # 脚本目录
+│   ├── setup.py                       # 环境设置脚本
+│   ├── install_dependencies.sh        # 依赖安装脚本
+│   └── generate_report.py             # 报告生成脚本
+│
+├── examples/                          # 示例目录
+│   ├── basic/                         # 基础示例
+│   │   ├── can_send.py                # CAN发送示例
+│   │   └── serial_echo.py             # 串口回显示例
+│   │
+│   └── advanced/                      # 高级示例
+│       ├── durability_test_demo.py    # 耐久测试示例
+│       └── diagnostic_test.py         # 诊断测试示例
+│
+├── docs/                              # 文档目录
+│   ├── api/                           # API文档
+│   ├── user_guide/                    # 用户指南
+│   └── examples/                      # 示例文档
+│
+├── main.py                            # 主程序入口
+├── requirements.txt                   # 依赖库列表
+└── README.md                          # 项目说明文档
+```
+
+## 核心模块设计
+
+### 1. CAN通信模块
+
+```python
+# src/can/vector_interface.py
+class VectorInterface:
+    """Vector硬件接口，负责与Vector硬件的底层通信"""
+    def initialize(self, channel_config)
+    def send_message(self, message_id, data, channel)
+    def receive_message(self, channel)
+    def close()
+
+# src/can/can_manager.py
+class CANManager:
+    """CAN通信管理器，封装CAN消息的收发逻辑"""
+    def __init__(self, config, logger)
+    def start()
+    def send_message(self, message_name)
+    def register_receiver(self, message_id, callback)
+    def periodic_send(self, message_name, interval)
+    def stop_periodic_send(self, message_name)
+    def stop()
+```
+
+### 2. 串口通信模块
+
+```python
+# src/serial/serial_manager.py
+class SerialManager:
+    """串口通信管理器，处理串口数据收发"""
+    def __init__(self, config, logger)
+    def connect()
+    def send_data(self, data)
+    def register_receiver(self, callback)
+    def disconnect()
+```
+
+### 3. 配置管理模块
+
+```python
+# src/config/config_parser.py
+class ConfigParser:
+    """配置文件解析器，处理JSON配置文件"""
+    def __init__(self, config_path)
+    def get_can_config()
+    def get_serial_config()
+    def get_test_config()
+    def save_config(config_data, config_type)
+```
+
+### 4. 日志模块
+
+```python
+# src/logging/log_manager.py
+class LogManager:
+    """日志管理器，集中管理所有日志功能"""
+    def __init__(self, config)
+    def get_app_logger()
+    def get_can_logger()
+    def get_serial_logger()
+
+# src/logging/can_logger.py
+class CANLogger:
+    """CAN报文日志记录器"""
+    def log_send(self, message_id, data, channel)
+    def log_receive(self, message_id, data, channel, timestamp)
+
+# src/logging/serial_logger.py
+class SerialLogger:
+    """串口数据日志记录器"""
+    def log_send(self, data)
+    def log_receive(self, data, timestamp)
+```
+
+## 配置文件示例
+
+```json
+// config/can_messages.json
+{
+  "messages": [
+    {
+      "name": "Engine_Status",
+      "id": "0x100",
+      "length": 8,
+      "data": [0, 0, 0, 0, 0, 0, 0, 0],
+      "description": "引擎状态信息"
+    }
+  ],
+  "channels": [
+    {
+      "channel_id": 1,
+      "bitrate": 500000,
+      "app_name": "CANapp1"
+    }
+  ]
+}
+
+// config/serial_config.json
+{
+  "port": "COM1",
+  "baudrate": 115200,
+  "bytesize": 8,
+  "parity": "N",
+  "stopbits": 1,
+  "timeout": 1.0
+}
+
+// config/test_config.json
+{
+  "test_duration": 3600,
+  "periodic_messages": [
+    {
+      "message_name": "Engine_Status",
+      "interval": 0.1
+    }
+  ],
+  "logging": {
+    "log_level": "INFO",
+    "app_log_path": "./logs/app_logs",
+    "can_log_path": "./logs/can_logs",
+    "serial_log_path": "./logs/serial_logs"
+  }
+}
+```
+
+## 主程序入口
+
+```python
+# main.py
+from src.config.config_parser import ConfigParser
+from src.logging.log_manager import LogManager
+from src.can.can_manager import CANManager
+from src.serial.serial_manager import SerialManager
+
+def main():
+    # 加载配置
+    config = ConfigParser("./config")
+    
+    # 初始化日志系统
+    log_manager = LogManager(config.get_test_config()["logging"])
+    app_logger = log_manager.get_app_logger()
+    
+    # 初始化CAN通信
+    can_manager = CANManager(config.get_can_config(), log_manager.get_can_logger())
+    
+    # 初始化串口通信
+    serial_manager = SerialManager(config.get_serial_config(), log_manager.get_serial_logger())
+    
+    # 启动各模块
+    can_manager.start()
+    serial_manager.connect()
+    
+    # 运行测试
+    test_config = config.get_test_config()
+    # 根据测试配置设置定时发送等功能
+    
+    # 清理资源
+    can_manager.stop()
+    serial_manager.disconnect()
+
+if __name__ == "__main__":
+    main()
+```
+
+## 第三方依赖
+
+```
+# requirements.txt
+pyserial>=3.5
+python-can>=3.3.4
+cantools>=36.2.0
+pyvector>=1.0.0  # Vector硬件接口库（假设存在）
+jsonschema>=4.0.0
+``` 

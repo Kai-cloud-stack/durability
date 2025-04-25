@@ -1,0 +1,45 @@
+{   "app_name": "PythonCAN",
+    "interface": "vector",
+    
+    "zcu_can":{
+        "bitrate": 500000,
+        "fd": true,
+        "bitrate_switch_auto": true,
+        "channel": 0,
+        "zcu_can_filter": [
+            {
+                "can_id": "0x7E0",
+                "can_mask": "0xFFF",
+                "extended": false
+            },
+            {
+                "can_id": "0x7E8",
+                "can_mask": "0xFFF",
+                "extended": false
+            }
+        ],
+        "zcu_nm": "0x3F, 0x40, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00",
+        "zcu_nm_mask": "0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF"
+    },
+
+    "chassis_can":{
+        "bitrate": 500000,
+        "fd": true,
+        "bitrate_switch_auto": true,
+        "channel": 1,
+        "chassis_can_filter": [
+            {
+                "can_id": "0x7E0",
+                "can_mask": "0xFFF",
+                "extended": false
+            }
+        ],
+        "chassis_nm": "0x3F, 0x40, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00",
+        "chassis_nm_mask": "0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF"
+    }
+
+
+
+
+
+}
