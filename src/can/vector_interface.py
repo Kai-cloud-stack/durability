@@ -32,22 +32,29 @@ class VectorInterface:
         self.is_initialized = False
         self._rx_callbacks = {}  # 接收回调函数
 
-    def initialize(self, channel: Optional[int] = None) -> bool:
+    def initialize(self, channel: Optional[int] = None, channel_type: str = 'zcu_can') -> bool:
         """
         初始化Vector硬件接口
         
         Args:
             channel: CAN通道号(可选)，若不提供则从配置文件获取
+            channel_type: 通道类型，可选 'zcu_can' 或 'chassis_can'
             
         Returns:
             bool: 初始化是否成功
         """
-        # 从配置文件中获取参数，如果未提供则使用默认值
-        channel = channel if channel is not None else self.config.get('CAN_ZCU', 0)
-        bitrate = self.config.get('bitrate', 500000)
+        # 从配置文件中获取参数
+        channel_config = self.config.get(channel_type, {})
+        channel = channel if channel is not None else channel_config.get('channel', 0)
+        bitrate = channel_config.get('bitrate', 500000)
         app_name = self.config.get('app_name', 'PythonCAN')
-        fd = self.config.get('fd', False)
-        bitrate_switch_auto = self.config.get('bitrate_switch_auto', True)
+        fd = channel_config.get('fd', False)
+        bitrate_switch_auto = channel_config.get('bitrate_switch_auto', True)
+        
+        # 更新CAN过滤规则
+        self.can_filter = channel_config.get(f'{channel_type}_filter', [])
+        self.printer = canexp.Logger(None, self.can_filter)
+        
         try:
             self.bus = canexp.Bus(
                 interface=self.config.get('interface', 'vector'),
